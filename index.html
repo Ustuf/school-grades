@@ -12,8 +12,10 @@
       --muted: #8a8a8e;
       --line: #ececea;
       --accent: #2f6fed;
+      --danger: #c0392b;
     }
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body {
       margin: 0;
       background: var(--bg);
@@ -22,9 +24,13 @@
     }
     main { max-width: 860px; margin: 0 auto; padding: 48px 16px 64px; }
     h1 { font-size: 24px; font-weight: 600; margin: 0 0 4px; }
+    h2 { font-size: 17px; font-weight: 600; margin: 0; }
+    h3 { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase;
+         letter-spacing: .04em; margin: 0; padding: 14px 16px 6px; }
     .sub { color: var(--muted); margin: 0 0 24px; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
     .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    input, select {
+    input, select, button {
       font: inherit; color: inherit;
       padding: 8px 12px;
       border: 1px solid var(--line);
@@ -33,15 +39,22 @@
       outline: none;
     }
     input { flex: 1; min-width: 180px; }
-    input:focus, select:focus { border-color: var(--accent); }
+    input:focus, select:focus, button:focus-visible { border-color: var(--accent); }
+    button { cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button:disabled { opacity: .6; cursor: wait; }
     .card {
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 12px;
       overflow: hidden;
+      margin-bottom: 16px;
     }
+    .card-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex;
+                 justify-content: space-between; align-items: baseline; gap: 8px; }
+    .card-head span { color: var(--muted); font-size: 13px; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 12px 16px; text-align: left; }
+    th, td { padding: 10px 16px; text-align: left; }
     th {
       font-size: 12px; font-weight: 500; color: var(--muted);
       text-transform: uppercase; letter-spacing: .04em;
@@ -64,36 +77,78 @@
     .g5 { background: #e8f5ec; color: #1f7a3d; }
     .g4 { background: #eef2fb; color: var(--accent); }
     .g3 { background: #fdf4e3; color: #9a6a00; }
-    .g2 { background: #fdeceb; color: #c0392b; }
-    .date { color: var(--muted); white-space: nowrap; }
+    .g2 { background: #fdeceb; color: var(--danger); }
+    .muted, .date { color: var(--muted); }
+    .date { white-space: nowrap; }
     .state { padding: 32px 16px; text-align: center; color: var(--muted); }
-    .state.error { color: #c0392b; }
+    .state.error { color: var(--danger); }
+
+    /* вход и регистрация */
+    .auth { max-width: 360px; margin: 10vh auto 0; padding: 0 16px; }
+    .tabs { display: flex; gap: 4px; padding: 6px; border-bottom: 1px solid var(--line); }
+    .tabs button { flex: 1; border: 0; background: none; color: var(--muted); }
+    .tabs button.on { background: var(--bg); color: var(--text); font-weight: 600; }
+    .auth form { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+    .auth input, .auth select { min-width: 0; width: 100%; }
+    .auth .msg { min-height: 1.4em; margin: 0; font-size: 14px; color: var(--danger); }
+    .auth .msg.ok { color: #1f7a3d; }
+    .auth .hint { margin: 0; font-size: 13px; color: var(--muted); }
+
     @media (max-width: 520px) {
-      th, td { padding: 10px 10px; }
+      th, td { padding: 8px 10px; }
       main { padding-top: 28px; }
     }
   </style>
 </head>
 <body>
-  <main>
+  <!-- Вход / регистрация -->
+  <section class="auth" id="auth" hidden>
     <h1>Оценки учеников</h1>
-    <p class="sub" id="count">Загрузка…</p>
+    <p class="sub">Войдите или зарегистрируйтесь</p>
+    <div class="card">
+      <div class="tabs">
+        <button type="button" id="tabLogin" class="on">Вход</button>
+        <button type="button" id="tabReg">Регистрация</button>
+      </div>
 
-    <div class="filters">
+      <form id="loginForm">
+        <input id="email" type="email" placeholder="Почта (логин)" autocomplete="username" required>
+        <input id="password" type="password" placeholder="Пароль" autocomplete="current-password" required>
+        <button class="primary" id="loginBtn" type="submit">Войти</button>
+        <p class="msg" id="loginMsg"></p>
+      </form>
+
+      <form id="regForm" hidden>
+        <p class="hint">Регистрация для учеников. Родителей и учителей добавляет администратор.</p>
+        <input id="regName" type="text" placeholder="ФИО ученика" autocomplete="name" required>
+        <select id="regClass" required><option value="">Класс…</option></select>
+        <input id="regEmail" type="email" placeholder="Почта (будет логином)" autocomplete="username" required>
+        <input id="regPassword" type="password" placeholder="Пароль (не короче 6 символов)"
+               autocomplete="new-password" minlength="6" required>
+        <button class="primary" id="regBtn" type="submit">Зарегистрироваться</button>
+        <p class="msg" id="regMsg"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Приложение после входа -->
+  <main id="app" hidden>
+    <div class="top">
+      <div>
+        <h1>Оценки учеников</h1>
+        <p class="sub" id="who">Загрузка…</p>
+      </div>
+      <button id="logout" type="button">Выйти</button>
+    </div>
+
+    <div class="filters" id="filters" hidden>
       <input id="search" type="search" placeholder="Поиск по ФИО">
       <select id="class"><option value="">Все классы</option></select>
       <select id="subject"><option value="">Все предметы</option></select>
     </div>
 
-    <div class="card">
-      <table>
-        <thead>
-          <tr><th>Ученик</th><th>Класс</th><th>Предмет</th><th class="grade">Оценка</th><th>Дата</th></tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
-      <div class="state" id="state" hidden></div>
-    </div>
+    <div id="content"></div>
+    <div class="state" id="state" hidden></div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -102,100 +157,301 @@
     const SUPABASE_KEY = 'sb_publishable_6-1A2s-fbl7eXHPntEkbGA_nFzqDTzV';
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    const ROLES = { teacher: 'Учитель', student: 'Ученик', parent: 'Родитель' };
     const $ = (id) => document.getElementById(id);
-    let all = [];
 
-    function showState(text, isError) {
-      const el = $('state');
-      el.hidden = !text;
-      el.textContent = text || '';
-      el.className = 'state' + (isError ? ' error' : '');
+    let profile = null;
+    let grades = [];
+    let subjects = [];
+    let loadedFor = null; // id пользователя, для которого уже загружены данные
+
+    /* ---------- вспомогательное ---------- */
+
+    function el(tag, className, text) {
+      const e = document.createElement(tag);
+      if (className) e.className = className;
+      if (text !== undefined) e.textContent = text;
+      return e;
     }
 
-    function render() {
+    function fmtDate(d) {
+      if (!d) return '—';
+      const [y, m, day] = String(d).slice(0, 10).split('-');
+      return `${day}.${m}.${y}`;
+    }
+
+    const cmp = (a, b) => String(a ?? '').localeCompare(String(b ?? ''), 'ru', { numeric: true });
+
+    function showState(text, isError) {
+      const s = $('state');
+      s.hidden = !text;
+      s.textContent = text || '';
+      s.className = 'state' + (isError ? ' error' : '');
+    }
+
+    function table(headers, rows) {
+      const t = el('table');
+      const head = el('tr');
+      headers.forEach(([text, cls]) => head.append(el('th', cls, text)));
+      const thead = el('thead');
+      thead.append(head);
+      t.append(thead);
+      const body = el('tbody');
+      rows.forEach((cells) => {
+        const tr = el('tr');
+        cells.forEach((c) => {
+          if (c instanceof Node) tr.append(c);
+          else tr.append(el('td', '', c));
+        });
+        body.append(tr);
+      });
+      t.append(body);
+      return t;
+    }
+
+    function dateCell(d) { return el('td', 'date', fmtDate(d)); }
+
+    function gradeCell(row, editable) {
+      const td = el('td', 'grade');
+      if (row.value == null) { td.append(el('span', 'muted', '—')); return td; }
+      if (editable && row.can_edit) {
+        const sel = el('select', 'badge g' + row.value);
+        sel.title = 'Изменить оценку';
+        [2, 3, 4, 5].forEach((v) => sel.append(new Option(v, v, false, v === row.value)));
+        sel.addEventListener('change', () => saveGrade(row, sel));
+        td.append(sel);
+      } else {
+        td.append(el('span', 'badge g' + row.value, row.value));
+      }
+      return td;
+    }
+
+    /* ---------- отрисовка по ролям ---------- */
+
+    // Учитель: все ученики классов, где он ведёт предмет, по классам
+    function renderTeacher() {
       const q = $('search').value.trim().toLowerCase();
       const cls = $('class').value;
       const subj = $('subject').value;
-      const list = all.filter((r) =>
+      const list = grades.filter((r) =>
         (!cls || r.class_name === cls) &&
         (!subj || r.subject === subj) &&
         (!q || r.student.toLowerCase().includes(q)));
 
-      $('rows').replaceChildren(...list.map((r) => {
-        const tr = document.createElement('tr');
-        [r.student, r.class_name || '—', r.subject].forEach((t) => {
-          const td = document.createElement('td');
-          td.textContent = t;
-          tr.append(td);
-        });
+      const content = $('content');
+      content.replaceChildren();
 
-        // Единственное редактируемое поле — оценка
-        const g = document.createElement('td');
-        g.className = 'grade';
-        const sel = document.createElement('select');
-        sel.className = 'badge g' + r.value;
-        sel.title = 'Изменить оценку';
-        [2, 3, 4, 5].forEach((v) => sel.append(new Option(v, v, false, v === r.value)));
-        sel.addEventListener('change', () => saveGrade(r, sel));
-        g.append(sel);
-        tr.append(g);
+      const byClass = new Map();
+      list.forEach((r) => {
+        if (!byClass.has(r.class_name)) byClass.set(r.class_name, []);
+        byClass.get(r.class_name).push(r);
+      });
 
-        const d = document.createElement('td');
-        d.className = 'date';
-        d.textContent = r.given_on ? new Date(r.given_on).toLocaleDateString('ru-RU') : '—';
-        tr.append(d);
-        return tr;
-      }));
+      [...byClass.keys()].sort(cmp).forEach((name) => {
+        const rows = byClass.get(name)
+          .sort((a, b) => cmp(a.student, b.student) || cmp(b.given_on, a.given_on));
+        const students = new Set(rows.map((r) => r.student)).size;
 
-      $('count').textContent = `Записей: ${list.length}`;
+        const card = el('div', 'card');
+        const head = el('div', 'card-head');
+        head.append(el('h2', '', 'Класс ' + name), el('span', '', `учеников: ${students}`));
+        card.append(head, table(
+          [['Ученик'], ['Предмет'], ['Оценка', 'grade'], ['Дата']],
+          rows.map((r) => [r.student, r.subject, gradeCell(r, true), dateCell(r.given_on)])
+        ));
+        content.append(card);
+      });
+
       showState(list.length ? '' : 'Ничего не найдено');
     }
+
+    // Ученик и родитель: по каждому ребёнку — предметы с учителями и оценки с датами
+    function renderFamily() {
+      const content = $('content');
+      content.replaceChildren();
+
+      const kids = new Map();
+      const kid = (id, name, cls) => {
+        if (!kids.has(id)) kids.set(id, { name, cls, subjects: [], grades: [] });
+        return kids.get(id);
+      };
+      subjects.forEach((s) => kid(s.student_id, s.student, s.class_name).subjects.push(s));
+      grades.forEach((g) => kid(g.student_id, g.student, g.class_name).grades.push(g));
+
+      [...kids.values()].sort((a, b) => cmp(a.name, b.name)).forEach((k) => {
+        const card = el('div', 'card');
+        const head = el('div', 'card-head');
+        head.append(el('h2', '', k.name), el('span', '', k.cls ? 'Класс ' + k.cls : ''));
+        card.append(head);
+
+        card.append(el('h3', '', 'Предметы и учителя'));
+        card.append(k.subjects.length
+          ? table([['Предмет'], ['Учитель']],
+              k.subjects.sort((a, b) => cmp(a.subject, b.subject)).map((s) => [s.subject, s.teachers]))
+          : el('div', 'state', 'Предметы пока не назначены'));
+
+        card.append(el('h3', '', 'Оценки'));
+        card.append(k.grades.length
+          ? table([['Предмет'], ['Оценка', 'grade'], ['Дата'], ['Учитель']],
+              k.grades.sort((a, b) => cmp(b.given_on, a.given_on) || cmp(a.subject, b.subject))
+                .map((g) => [g.subject, gradeCell(g, false), dateCell(g.given_on), g.teacher || '—']))
+          : el('div', 'state', 'Оценок пока нет'));
+
+        content.append(card);
+      });
+
+      showState(kids.size ? '' : 'Данных пока нет');
+    }
+
+    function render() {
+      if (!profile) return;
+      if (profile.role === 'teacher') renderTeacher(); else renderFamily();
+    }
+
+    /* ---------- данные ---------- */
 
     async function saveGrade(row, sel) {
       const value = Number(sel.value);
       sel.disabled = true;
-      const { error } = await db.rpc('set_grade', { p_id: row.id, p_value: value });
+      const { error } = await db.rpc('set_grade', { p_id: row.grade_id, p_value: value });
       sel.disabled = false;
       if (error) {
         sel.value = row.value;
-        alert('Не удалось сохранить оценку: ' + error.message +
-          '\n(проверьте, что выполнен файл grade_edit.sql)');
+        alert('Не удалось сохранить оценку: ' + error.message);
         return;
       }
       row.value = value;
       sel.className = 'badge g' + value;
     }
 
-    function fillSelect(el, allLabel, values, numeric) {
-      const sorted = [...new Set(values.filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, 'ru', { numeric }));
-      el.replaceChildren(new Option(allLabel, ''), ...sorted.map((v) => new Option(v, v)));
+    function fillSelect(select, allLabel, values) {
+      const sorted = [...new Set(values.filter(Boolean))].sort(cmp);
+      select.replaceChildren(new Option(allLabel, ''), ...sorted.map((v) => new Option(v, v)));
     }
 
     async function load() {
-      const { data, error } = await db
-        .from('grades_public')
-        .select('id, student, class_name, subject, value, given_on')
-        .order('given_on', { ascending: false })
-        .limit(1000);
+      showState('');
+      $('who').textContent = 'Загрузка…';
+      $('content').replaceChildren();
 
-      if (error) {
-        $('count').textContent = '';
-        showState('Не удалось загрузить данные: ' + error.message +
-          ' (проверьте, что выполнен файл public_access.sql)', true);
+      const [p, g, s] = await Promise.all([db.rpc('my_profile'), db.rpc('my_grades'), db.rpc('my_subjects')]);
+      const err = p.error || g.error || s.error;
+      if (err) {
+        $('who').textContent = '';
+        showState('Не удалось загрузить данные: ' + err.message +
+          ' (проверьте, что выполнен файл auth_roles.sql)', true);
         return;
       }
 
-      all = data;
-      fillSelect($('class'), 'Все классы', all.map((r) => r.class_name), true);
-      fillSelect($('subject'), 'Все предметы', all.map((r) => r.subject), false);
+      profile = p.data[0];
+      if (!profile) {
+        $('who').textContent = '';
+        showState('Ваш вход не привязан к ученику, родителю или учителю. Обратитесь к администратору.', true);
+        return;
+      }
+
+      grades = g.data;
+      subjects = s.data;
+      $('who').textContent = `${profile.full_name} · ${ROLES[profile.role]}`;
+
+      const isTeacher = profile.role === 'teacher';
+      $('filters').hidden = !isTeacher;
+      if (isTeacher) {
+        fillSelect($('class'), 'Все классы', grades.map((r) => r.class_name));
+        fillSelect($('subject'), 'Все предметы', grades.map((r) => r.subject));
+      }
       render();
     }
 
+    /* ---------- вход, регистрация, выход ---------- */
+
+    function onSession(session) {
+      const user = session && session.user;
+      $('auth').hidden = !!user;
+      $('app').hidden = !user;
+      if (user && loadedFor !== user.id) {
+        loadedFor = user.id;
+        load();
+      }
+      if (!user) {
+        loadedFor = null;
+        profile = null;
+        grades = [];
+        subjects = [];
+        $('content').replaceChildren();
+        loadClasses();
+      }
+    }
+
+    function showTab(reg) {
+      $('loginForm').hidden = reg;
+      $('regForm').hidden = !reg;
+      $('tabLogin').classList.toggle('on', !reg);
+      $('tabReg').classList.toggle('on', reg);
+    }
+
+    async function loadClasses() {
+      if ($('regClass').options.length > 1) return;
+      const { data, error } = await db.rpc('list_classes');
+      if (error) {
+        $('regMsg').textContent = 'Не удалось загрузить список классов: ' + error.message;
+        return;
+      }
+      data.forEach((c) => $('regClass').append(new Option(c.name, c.id)));
+    }
+
+    const AUTH_ERRORS = {
+      'Invalid login credentials': 'Неверная почта или пароль',
+      'User already registered': 'Эта почта уже зарегистрирована',
+      'Email not confirmed': 'Почта не подтверждена',
+    };
+    const authError = (e) =>
+      AUTH_ERRORS[e.message] ||
+      (/password.*(at least|short)/i.test(e.message) ? 'Пароль должен быть не короче 6 символов' : e.message);
+
+    $('tabLogin').addEventListener('click', () => showTab(false));
+    $('tabReg').addEventListener('click', () => showTab(true));
+
+    $('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      $('loginMsg').textContent = '';
+      $('loginBtn').disabled = true;
+      const { error } = await db.auth.signInWithPassword({
+        email: $('email').value.trim(),
+        password: $('password').value,
+      });
+      $('loginBtn').disabled = false;
+      if (error) $('loginMsg').textContent = authError(error);
+      else $('password').value = '';
+    });
+
+    $('regForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = $('regMsg');
+      msg.className = 'msg';
+      msg.textContent = '';
+      $('regBtn').disabled = true;
+      const { data, error } = await db.auth.signUp({
+        email: $('regEmail').value.trim(),
+        password: $('regPassword').value,
+        options: { data: { full_name: $('regName').value.trim(), class_id: Number($('regClass').value) } },
+      });
+      $('regBtn').disabled = false;
+      if (error) { msg.textContent = authError(error); return; }
+      if (!data.session) {
+        msg.className = 'msg ok';
+        msg.textContent = 'Готово. Подтвердите почту по письму, затем войдите.';
+      }
+      // если сессия есть, onAuthStateChange сам откроет таблицу
+    });
+
+    $('logout').addEventListener('click', () => db.auth.signOut());
     $('search').addEventListener('input', render);
     $('class').addEventListener('change', render);
     $('subject').addEventListener('change', render);
-    load();
+
+    // setTimeout: запросы к Supabase нельзя делать прямо внутри этого колбэка
+    db.auth.onAuthStateChange((_event, session) => setTimeout(() => onSession(session), 0));
   </script>
 </body>
 </html>
