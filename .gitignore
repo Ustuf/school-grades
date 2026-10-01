@@ -5,3 +5,4 @@
 !index.html
 !server.js
 !auth_roles.sql
+!rls_policies.sql
