@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Оценки учеников</title>
+  <style>
+    :root {
+      --bg: #fafaf8;
+      --card: #ffffff;
+      --text: #1d1d1f;
+      --muted: #8a8a8e;
+      --line: #ececea;
+      --accent: #2f6fed;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 860px; margin: 0 auto; padding: 48px 16px 64px; }
+    h1 { font-size: 24px; font-weight: 600; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 24px; }
+    .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    input, select {
+      font: inherit; color: inherit;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+      outline: none;
+    }
+    input { flex: 1; min-width: 180px; }
+    input:focus, select:focus { border-color: var(--accent); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: left; }
+    th {
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .04em;
+      border-bottom: 1px solid var(--line);
+    }
+    td { border-bottom: 1px solid var(--line); }
+    tr:last-child td { border-bottom: 0; }
+    td.grade, th.grade { text-align: center; }
+    .badge {
+      display: inline-block; min-width: 28px; padding: 2px 8px;
+      border-radius: 999px; font-weight: 600; text-align: center;
+      background: #eef2fb; color: var(--accent);
+    }
+    select.badge {
+      appearance: none; -webkit-appearance: none;
+      border: 0; cursor: pointer; font: inherit; font-weight: 600;
+      padding: 2px 10px; text-align-last: center;
+    }
+    select.badge:disabled { opacity: .5; cursor: wait; }
+    .g5 { background: #e8f5ec; color: #1f7a3d; }
+    .g4 { background: #eef2fb; color: var(--accent); }
+    .g3 { background: #fdf4e3; color: #9a6a00; }
+    .g2 { background: #fdeceb; color: #c0392b; }
+    .date { color: var(--muted); white-space: nowrap; }
+    .state { padding: 32px 16px; text-align: center; color: var(--muted); }
+    .state.error { color: #c0392b; }
+    @media (max-width: 520px) {
+      th, td { padding: 10px 10px; }
+      main { padding-top: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Оценки учеников</h1>
+    <p class="sub" id="count">Загрузка…</p>
+
+    <div class="filters">
+      <input id="search" type="search" placeholder="Поиск по ФИО">
+      <select id="class"><option value="">Все классы</option></select>
+      <select id="subject"><option value="">Все предметы</option></select>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Ученик</th><th>Класс</th><th>Предмет</th><th class="grade">Оценка</th><th>Дата</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="state" id="state" hidden></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://stflmgoydpwyrhmgpflk.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_6-1A2s-fbl7eXHPntEkbGA_nFzqDTzV';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const $ = (id) => document.getElementById(id);
+    let all = [];
+
+    function showState(text, isError) {
+      const el = $('state');
+      el.hidden = !text;
+      el.textContent = text || '';
+      el.className = 'state' + (isError ? ' error' : '');
+    }
+
+    function render() {
+      const q = $('search').value.trim().toLowerCase();
+      const cls = $('class').value;
+      const subj = $('subject').value;
+      const list = all.filter((r) =>
+        (!cls || r.class_name === cls) &&
+        (!subj || r.subject === subj) &&
+        (!q || r.student.toLowerCase().includes(q)));
+
+      $('rows').replaceChildren(...list.map((r) => {
+        const tr = document.createElement('tr');
+        [r.student, r.class_name || '—', r.subject].forEach((t) => {
+          const td = document.createElement('td');
+          td.textContent = t;
+          tr.append(td);
+        });
+
+        // Единственное редактируемое поле — оценка
+        const g = document.createElement('td');
+        g.className = 'grade';
+        const sel = document.createElement('select');
+        sel.className = 'badge g' + r.value;
+        sel.title = 'Изменить оценку';
+        [2, 3, 4, 5].forEach((v) => sel.append(new Option(v, v, false, v === r.value)));
+        sel.addEventListener('change', () => saveGrade(r, sel));
+        g.append(sel);
+        tr.append(g);
+
+        const d = document.createElement('td');
+        d.className = 'date';
+        d.textContent = r.given_on ? new Date(r.given_on).toLocaleDateString('ru-RU') : '—';
+        tr.append(d);
+        return tr;
+      }));
+
+      $('count').textContent = `Записей: ${list.length}`;
+      showState(list.length ? '' : 'Ничего не найдено');
+    }
+
+    async function saveGrade(row, sel) {
+      const value = Number(sel.value);
+      sel.disabled = true;
+      const { error } = await db.rpc('set_grade', { p_id: row.id, p_value: value });
+      sel.disabled = false;
+      if (error) {
+        sel.value = row.value;
+        alert('Не удалось сохранить оценку: ' + error.message +
+          '\n(проверьте, что выполнен файл grade_edit.sql)');
+        return;
+      }
+      row.value = value;
+      sel.className = 'badge g' + value;
+    }
+
+    function fillSelect(el, allLabel, values, numeric) {
+      const sorted = [...new Set(values.filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'ru', { numeric }));
+      el.replaceChildren(new Option(allLabel, ''), ...sorted.map((v) => new Option(v, v)));
+    }
+
+    async function load() {
+      const { data, error } = await db
+        .from('grades_public')
+        .select('id, student, class_name, subject, value, given_on')
+        .order('given_on', { ascending: false })
+        .limit(1000);
+
+      if (error) {
+        $('count').textContent = '';
+        showState('Не удалось загрузить данные: ' + error.message +
+          ' (проверьте, что выполнен файл public_access.sql)', true);
+        return;
+      }
+
+      all = data;
+      fillSelect($('class'), 'Все классы', all.map((r) => r.class_name), true);
+      fillSelect($('subject'), 'Все предметы', all.map((r) => r.subject), false);
+      render();
+    }
+
+    $('search').addEventListener('input', render);
+    $('class').addEventListener('change', render);
+    $('subject').addEventListener('change', render);
+    load();
+  </script>
+</body>
+</html>

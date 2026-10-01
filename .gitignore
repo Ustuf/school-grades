@@ -1,0 +1,8 @@
+# Заливаем только то, что перечислено ниже. Всё остальное (.env, логи, скрипты с ключами) игнорируется.
+*
+!.gitignore
+!README.md
+!index.html
+!server.js
+!public_access.sql
+!grade_edit.sql
